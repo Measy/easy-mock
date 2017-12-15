@@ -138,6 +138,19 @@
     }
   }
 
+  @d cases {
+    background: #fff;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 3px #eee;
+    padding: 20px 20px 0;
+
+    h2 {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+  }
+
   .ivu-table-cell .ivu-dropdown {
     margin-left: 5px;
   }

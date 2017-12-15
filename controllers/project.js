@@ -10,6 +10,7 @@ const ft = require('../models/fields_table')
 const projectProxy = p.Project
 const mockProxy = p.Mock
 const userProjectProxy = p.UserProject
+const userProxy = p.User
 
 function projectExistCheck (id, uid) {
   return projectProxy.findOne({ _id: id }).then((project) => {
@@ -165,7 +166,18 @@ exports.create = function * () {
     return
   }
 
+  // 设置默认场景
+  saveQuery.cases = ['default']
+
   const newProjects = yield projectProxy.newAndSave(saveQuery)
+
+  // 往user表里面塞关联的project信息
+  const user = yield userProxy.getById(uid)
+  user.projects.push({
+    project: newProjects[0].id,
+    currentCase: 'default'
+  })
+  yield userProxy.update(user)
 
   // 基于 swagger 创建 mock
   if (swaggerUrl) {
@@ -412,6 +424,10 @@ exports.delete = function * () {
   }
 
   yield projectProxy.delById(id)
+  // 去除user表里面关联的该project信息
+  const user = yield userProxy.getById(uid)
+  user.projects = user.projects.filter(proj => proj.id !== id)
+  yield userProxy.update(user)
 
   this.body = this.util.resuccess()
 }
@@ -445,13 +461,167 @@ exports.copy = function * () {
     url: newUrl,
     description: project.description,
     swagger_url: project.swagger_url
-  }).then(projects => mockProxy.newAndSave(mocks.map(item => ({
-    project: projects[0].id,
+  }).then(projects => {
+    // 往user表里面塞关联的project信息
+    const user = userProxy.getById(uid)
+    user.projects.push({
+      project: projects[0].id,
+      currentCase: 'default'
+    })
+    userProxy.update(user)
+    mockProxy.newAndSave(mocks.map(item => ({
+      project: projects[0].id,
+      description: item.description,
+      method: item.method,
+      url: item.url,
+      mode: item.mode
+    })))
+  })
+
+  this.body = this.util.resuccess()
+}
+
+exports.copyCase = function * () {
+  const uid = this.state.user.id
+  const id = this.checkBody('id').notEmpty().value
+  const caseName = this.checkBody('caseName').notEmpty().value
+  const srcCase = this.checkBody('srcCase').value || 'default'
+
+  if (this.errors) {
+    this.body = this.util.refail(null, 10001, this.errors)
+    return
+  }
+
+  // 获取待复制项目指定场景下所有 mock
+  const mocks = yield mockProxy.find({ project: id, case: srcCase })
+
+  if (mocks.length === 0) {
+    this.body = this.util.refail('复制场景失败，该场景下无 Mock 数据')
+    return
+  }
+
+  const project = mocks[0].project
+
+  // 创建项目，只创建已有 mock。
+  // 此时 swagger_url 无效
+  yield projectProxy.updateById({
+    id: project.id,
+    url: project.url,
+    name: project.name,
+    members: project.members,
+    description: project.description,
+    swagger_url: project.swagger_url,
+    cases: [...project.cases, caseName]
+  }).then(proj => mockProxy.newAndSave(mocks.map(item => ({
+    project: project.id,
     description: item.description,
     method: item.method,
     url: item.url,
-    mode: item.mode
+    mode: item.mode,
+    case: caseName
   }))))
 
+  // 往user表里面更新关联的project的currentCase信息
+  const user = yield userProxy.getById(uid)
+  user.projects = user.projects.map(proj => {
+    if (proj.project.id.toString('hex') === project.id) proj.currentCase = caseName
+    return proj
+  })
+  yield userProxy.update(user)
+
+  const body = yield getCaseMockList(project.id, caseName)
+  this.body = this.util.resuccess(body)
+}
+
+// 删除某个项目下的api场景
+exports.deleteCase = function * () {
+  const uid = this.state.user.id
+  const projectId = this.checkParams('projectId').value
+  const caseName = this.checkParams('caseName').value
+
+  if (this.errors) {
+    this.body = this.util.refail(null, 10001, this.errors)
+    return
+  }
+  // 获取待复制项目指定场景下所有 mock
+  const mocks = yield mockProxy.find({ project: projectId, case: caseName })
+  const mockIds = mocks.map(mockItem => mockItem.id)
+
+  if (mocks.length === 0) {
+    this.body = this.util.refail('你不能删除不存在的场景')
+    return
+  }
+
+  const project = mocks[0].project
+
+  // 更新项目的case列表，除去删掉的case
+  yield projectProxy.updateById({
+    id: project.id,
+    url: project.url,
+    name: project.name,
+    members: project.members,
+    description: project.description,
+    swagger_url: project.swagger_url,
+    cases: project.cases.filter(el => el !== caseName)
+  })
+
+  // const unMatchMock = mocks.filter((item) => {
+  //   const project = item.project
+  //   // 允许删除团队项目下的 mock；其实我觉得团队项目下也是允许删除case
+  //   if (project.group) {
+  //     return false
+  //   }
+  //   const members = project.members
+  //   const mockUId = project.user.toString()
+  //   return mockUId !== uid && members.indexOf(uid) === -1
+  // })
+  // if (!_.isEmpty(unMatchMock)) {
+  //   this.body = this.util.refail('删除失败，无权限')
+  //   return
+  // }
+
+  yield mockProxy.delByIds(mockIds)
+
+  const updateUserCase = function * (member) {
+    const user = yield userProxy.getById(member)
+    user.projects = user.projects.map(proj => {
+      if (proj.project.id.toString('hex') === projectId && proj.currentCase === caseName) proj.currentCase = 'default'
+      return proj
+    })
+    return userProxy.update(user)
+  }
+  // 如果有用户当前是处于这个case状态下，把他的case调整为default
+  yield Promise.all(project.members.map(updateUserCase))
+  yield updateUserCase(uid)
   this.body = this.util.resuccess()
+}
+
+const getCaseMockList = function * (projectId, caseName) {
+  const pageIndex = 1
+
+  const opt = {
+    skip: (pageIndex - 1) * 2000,
+    limit: 2000,
+    sort: '-create_at'
+  }
+
+  const where = {
+    project: projectId,
+    case: caseName
+  }
+
+  let mocks = yield mockProxy.find(where, opt)
+  let project = yield projectProxy.getById(projectId)
+
+  project.members = project.members.map(o => _.pick(o, ft.user))
+  project.extend = _.pick(project.extend, ft.projectExtend)
+  project.group = _.pick(project.group, ft.group)
+  project.user = _.pick(project.user, ft.user)
+  project = _.pick(project, ['user'].concat(ft.project))
+  mocks = mocks.map(o => _.pick(o, ft.mock))
+
+  return {
+    project,
+    mocks
+  }
 }

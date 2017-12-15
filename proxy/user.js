@@ -26,7 +26,8 @@ exports.update = function (user) {
     $set: {
       nick_name: user.nick_name,
       head_img: user.head_img,
-      password: user.password
+      password: user.password,
+      projects: user.projects
     }
   })
 }

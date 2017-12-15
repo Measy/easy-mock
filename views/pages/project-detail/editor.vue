@@ -62,7 +62,8 @@ if (typeof window !== 'undefined') {
 
 export default {
   props: {
-    value: {}
+    value: {},
+    currentCase: ''
   },
   data () {
     return {
@@ -182,6 +183,7 @@ export default {
         this.$store.dispatch('mock/CREATE', {
           route: this.$route,
           ...this.temp,
+          api_case: this.currentCase,
           url: mockUrl
         }).then((res) => {
           if (res.data.success) this.close()

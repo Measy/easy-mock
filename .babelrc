@@ -2,6 +2,7 @@
   "presets": ["env", "stage-0"],
   "plugins": [
     "syntax-dynamic-import",
-    "transform-vue-jsx"
+    "transform-vue-jsx",
+    "transform-runtime"
   ]
 }

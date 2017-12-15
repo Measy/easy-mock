@@ -147,7 +147,9 @@ const project = {
   update: config => createAPI('/project/update', 'post', config),
   updateSwagger: config => createAPI('/project/update_swagger', 'post', config),
   updateWorkbench: config => createAPI('/project/update_workbench', 'post', config),
-  delete: config => createAPI('/project/delete', 'post', config)
+  delete: config => createAPI('/project/delete', 'post', config),
+  copyCase: config => createAPI('/project/case', 'post', config),
+  deleteCase: ({projectId, caseName}) => createAPI(`/project/${projectId}/case/${caseName}`, 'delete')
 }
 
 const mock = {
@@ -155,7 +157,8 @@ const mock = {
   create: config => createAPI('/mock/create', 'post', config),
   update: config => createAPI('/mock/update', 'post', config),
   delete: config => createAPI('/mock/delete', 'post', config),
-  export: config => createExportForm('/mock/export', config)
+  export: config => createExportForm('/mock/export', config),
+  choseCase: config => createAPI('/u/project/update', 'put', config)
 }
 
 const group = {

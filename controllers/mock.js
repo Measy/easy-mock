@@ -34,7 +34,14 @@ function projectExistCheck (id, uid) {
 }
 
 exports.list = function * () {
+  const uid = this.state.user.id
   const projectId = this.checkQuery('project_id').notEmpty().value
+
+  // 选取用户当前处于的场景
+  const user = yield userProxy.getById(uid)
+  const apiCase = user.projects.filter(proj => {
+    if (proj.project.id.toString('hex') === projectId) return proj
+  })[0].currentCase
 
   const pageSize = this.checkQuery('page_size').empty().toInt().gt(0)
     .default(config.get('pageSize')).value
@@ -56,7 +63,8 @@ exports.list = function * () {
   }
 
   const where = {
-    project: projectId
+    project: projectId,
+    case: apiCase
   }
 
   if (keywords) {
@@ -84,7 +92,8 @@ exports.list = function * () {
 
   this.body = this.util.resuccess({
     project,
-    mocks
+    mocks,
+    apiCase
   })
 }
 
@@ -136,6 +145,7 @@ exports.create = function * () {
   const method = this.checkBody('method').notEmpty().toLow().in([
     'get', 'post', 'put', 'delete', 'patch'
   ]).value
+  const apiCase = this.checkBody('api_case').value || 'default' // 属于的场景
 
   if (this.errors) {
     this.body = this.util.refail(null, 10001, this.errors)
@@ -154,7 +164,8 @@ exports.create = function * () {
   const mock = yield mockProxy.findOne({
     project: projectId,
     url,
-    method
+    method,
+    case: apiCase
   })
 
   if (mock) {
@@ -165,6 +176,7 @@ exports.create = function * () {
   // 保存
   yield mockProxy.newAndSave({
     project: projectId,
+    case: apiCase,
     description,
     method,
     url,
@@ -221,7 +233,7 @@ exports.update = function * () {
     method: mock.method
   })
 
-  if (existMock) {
+  if (existMock && existMock.case === mock.case) { // 允许新建不同场景的
     this.body = this.util.refail('更新失败，已存在相同 Mock')
     return
   }
@@ -276,15 +288,16 @@ exports.getMock = function * () {
   const body = this.request.body || {}
   const method = this.method.toLowerCase()
   const urlArr = _.filter(this.path.split('/')) // filter empty
-  const userName = urlArr[1]
-  const projectUrl = `/${urlArr[2]}`
+  const userName = urlArr[1] // 其实是项目id，建议去除以前以用户名开头的路径的兼容，没必要
+  const userNameTrue = urlArr[2] // 真实的用户id，用来判断那个用户的请求，筛选具体场景的
+  const projectUrl = `/${urlArr[3]}`
   const callbackName = query.jsonp_param_name && (query[query.jsonp_param_name] || 'callback')
 
   let data
   let mocks
-  let reqUrl = `/${urlArr.slice(3).join('/')}`
+  let reqUrl = `/${urlArr.slice(4).join('/')}`
 
-  if (urlArr.length < 2) {
+  if (urlArr.length < 3) {
     this.throw(404)
   }
 
@@ -295,8 +308,8 @@ exports.getMock = function * () {
       // 现以 项目id 作为起始路径
       project = yield projectProxy.findOne({ _id: userName })
       reqUrl = project.url === '/'
-        ? `/${urlArr.slice(2).join('/')}`
-        : `/${urlArr.slice(2).join('/')}`.replace(project.url, '')
+        ? `/${urlArr.slice(3).join('/')}`
+        : `/${urlArr.slice(3).join('/')}`.replace(project.url, '')
     } else {
       // 兼容以前以用户名开头的路径
       const user = yield userProxy.getByName(userName)
@@ -306,8 +319,12 @@ exports.getMock = function * () {
       })
     }
 
+    const userTrue = yield userProxy.getById(userNameTrue)
+    const caseName = userTrue.projects.filter(proj => proj.project.id.toString('hex') === project.id)[0].currentCase
+
     mocks = yield mockProxy.find({
       project: project.id,
+      case: caseName,
       method
     })
   } catch (e) {

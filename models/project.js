@@ -31,7 +31,11 @@ const schema = new Schema({
   create_at: {
     type: Date,
     default: Date.now
-  }
+  },
+  cases: [{
+    type: String,
+    default: ['default']
+  }]
 })
 
 schema.index({ user: 1, members: 1, create_at: -1 })

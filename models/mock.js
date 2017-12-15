@@ -18,6 +18,10 @@ const schema = new Schema({
   create_at: {
     type: Date,
     default: Date.now
+  },
+  case: {
+    type: String,
+    default: 'default'
   }
 })
 

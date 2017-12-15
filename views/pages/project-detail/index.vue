@@ -7,7 +7,23 @@
       :nav="nav"
       v-model="pageName">
     </em-header>
-    <editor v-model="editor"></editor>
+    <editor :currentCase="currentCase" v-model="editor"></editor>
+    <Modal
+      v-model="optCase.show"
+      title="新增api场景"
+      :loading="optCase.loading"
+      @on-ok="newApiCase">
+      <Form ref="optCase" :model="optCase" :label-width="100">
+          <FormItem label="新增场景名字" prop="caseName">
+              <Input type="text" v-model="optCase.caseName"></Input>
+          </FormItem>
+          <FormItem label="copy from" prop="srcCase">
+              <i-select v-model="optCase.srcCase" key="select1">
+                  <Option v-for="casename in project.cases" :value="casename" :key="`select1${casename}`">{{ casename }}</Option>
+              </i-select>
+          </FormItem>
+      </Form>
+    </Modal>
     <div v-shortkey="['tab']" @shortkey="handleKeyTab()"></div>
     <em-keyboard-short v-model="keyboards"></em-keyboard-short>
     <transition name="fade" mode="out-in">
@@ -40,6 +56,12 @@
         </div>
         <div class="em-proj-detail__switcher">
           <ul>
+            <li @click="optCase.show = true" v-shortkey="['ctrl', 'a']" @shortkey="optCase.show = true">
+              <Icon type="plus-round"></Icon> 新增场景
+            </li>
+            <li @click="deleteCurCase" v-shortkey="['ctrl', 'd']" @shortkey="deleteCurCase">
+              <Icon type="trash-a"></Icon> 删除当前场景
+            </li>
             <li @click="openEditor()" v-shortkey="['ctrl', 'c']" @shortkey="openEditor()">
               <Icon type="plus-round"></Icon> 创建接口
             </li>
@@ -64,6 +86,12 @@
               <img :src="item.head_img" :title="item.nick_name"/>
             </Col>
           </Row>
+        </div>
+        <div class="em-proj-detail_cases">
+            <h2>场景切换</h2>
+            <i-select v-model="currentCase" key="select2">
+              <Option v-for="casename in project.cases" :value="casename" :label="casename" :key="`select2${casename}`"></Option>
+            </i-select>
         </div>
         <Table
           border
@@ -97,6 +125,12 @@ export default {
       pageName: '接口列表',
       selection: [],
       keywords: '',
+      optCase: {
+        show: false,
+        loading: true,
+        caseName: '',
+        srcCase: 'default'
+      },
       nav: [
         { title: '接口列表', icon: 'android-list' },
         { title: '设置', icon: 'gear-a' }
@@ -114,6 +148,8 @@ export default {
         {
           category: '操作',
           list: [
+            { description: '新增场景', shorts: ['ctrl', 'a'] },
+            { description: '删除当前场景', shorts: ['ctrl', 'd'] },
             { description: '创建接口', shorts: ['ctrl', 'c'] },
             { description: '添加 / 移除工作台', shorts: ['ctrl', 'w'] },
             { description: '同步 Swagger', shorts: ['ctrl', 's'] }
@@ -227,8 +263,17 @@ export default {
     page () {
       return this.$store.state.mock.page
     },
+    currentCase: {
+      get: function () {
+        console.log('this.$store.state.mock.apiCase', this.$store.state.mock.apiCase)
+        return this.$store.state.mock.apiCase
+      },
+      set: async function (val) {
+        await this.$store.dispatch('mock/CHOSE_CASE', {caseName: val, projectId: this.project._id})
+      }
+    },
     baseUrl () {
-      const baseUrl = location.origin + config.mockPrefix + this.project._id
+      const baseUrl = location.origin + config.mockPrefix + this.project._id + '/' + this.project.user._id
       return this.project.url === '/' ? baseUrl : baseUrl + this.project.url
     },
     group () {
@@ -249,6 +294,44 @@ export default {
         e.clearSelection()
         clipboard.destroy()
         this.$Message.success('接口地址已复制到剪贴板')
+      })
+    },
+    newApiCase () { // 这里新建case之后会默认选中新建的场景，实际上展示了新建的场景，但是select组件的截流器设置bug，导致选中的是默认第一个，暂时先在源码中修改，后面再起一个pr
+      this.optCase.loading = true
+      if (!this.optCase.caseName) {
+        this.$Message.error('请填写apicase名！')
+        this.optCase.loading = false
+        return
+      }
+      this.$store.dispatch('mock/COPY_CASE', {
+        caseName: this.optCase.caseName,
+        id: this.project._id,
+        srcCase: this.optCase.srcCase
+      }).then(res => {
+        if (res.data.success) {
+          this.optCase = {
+            show: false,
+            loading: true,
+            caseName: '',
+            srcCase: 'default'
+          }
+        }
+      })
+    },
+    deleteCurCase () {
+      if (this.currentCase === 'default') {
+        this.$Message.error('不可删除default case!')
+        return
+      }
+      this.$Modal.confirm({
+        title: '提示',
+        content: `该操作无法撤消，是否删除当前场景${this.currentCase}`,
+        onOk: () => {
+          this.$store.dispatch('mock/DELETE_CASE', {
+            caseName: encodeURIComponent(this.currentCase),
+            projectId: this.project._id
+          })
+        }
       })
     },
     preview (mock) {
@@ -315,6 +398,7 @@ export default {
     clone (mock) {
       this.$store.dispatch('mock/CREATE', {
         route: this.$route,
+        api_case: this.currentCase,
         ...mock,
         url: `${mock.url}_copy_${new Date().getTime()}`
       })

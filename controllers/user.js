@@ -115,6 +115,22 @@ exports.logout = function * () {
   this.body = this.util.resuccess()
 }
 
+// 修改指定用户的默认场景
+exports.choseCase = function * () {
+  const uid = this.state.user.id
+  const projectId = this.checkBody('projectId').notEmpty().value
+  const caseName = this.checkBody('caseName').notEmpty().value
+
+  // 往user表里面更新关联的project的currentCase信息
+  const user = yield userProxy.getById(uid)
+  user.projects = user.projects.map(proj => {
+    if (proj.project.id.toString('hex') === projectId) proj.currentCase = caseName
+    return proj
+  })
+  yield userProxy.update(user)
+  this.body = this.util.resuccess()
+}
+
 exports.register = function * () {
   const name = this.checkBody('name').notEmpty().len(4, 20).value
   const password = this.checkBody('password').notEmpty().len(6, 20).value

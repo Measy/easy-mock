@@ -6,10 +6,13 @@ const _ = require('lodash')
 const path = require('path')
 const axios = require('axios')
 const flatnest = require('flatnest')
+const qs = require('querystring')
 const swaggerTools = require('swagger-tools')
+const m = require('../models')
 
 const jsf = require('./jsf')
 const mockProxy = require('../proxy/mock')
+const ProjectModel = m.Project
 
 const specV1 = swaggerTools.specs.v1
 
@@ -112,21 +115,15 @@ function createMode (definitions, response) {
   }
 }
 
-/**
- * 该方法同时兼容对 Swagger 1.2 2.0 的处理
- *
- * @param {ObjectId} projectId 项目 Id
- * @param {String} basePath
- * @param {Object} paths
- * @returns
- */
-function createMock (projectId, swaggerInfo) {
+// 根据swagger和projectid及caseName去创建和merge指定项目的mock数据
+function updateAndMeargeMock (projectId, swaggerInfo, caseName) {
   const {
     basePath = '/', paths, definitions
   } = swaggerInfo
 
   return mockProxy.find({
-    project: projectId
+    project: projectId,
+    case: caseName
   }).then((mocks) => {
     const newMockList = []
     const oldMockList = []
@@ -237,6 +234,23 @@ function createMock (projectId, swaggerInfo) {
   })
 }
 
+/**
+ * 该方法同时兼容对 Swagger 1.2 2.0 的处理
+ *
+ * @param {ObjectId} projectId 项目 Id
+ * @param {String} basePath
+ * @param {Object} paths
+ * @returns
+ */
+function createMock (projectId, swaggerInfo) {
+  return ProjectModel.findById(projectId)
+    .then(project => {
+      const cases = project.cases
+      return Promise
+        .all(cases.map(caseName => updateAndMeargeMock(projectId, swaggerInfo, caseName)))
+    })
+}
+
 const getSwaggerInfo = exports.getSwaggerInfo = function (path, params) {
   let r = {}
   if (params) {
@@ -247,12 +261,14 @@ const getSwaggerInfo = exports.getSwaggerInfo = function (path, params) {
     r = path
   }
   r.url = `${r.url}?t=${_.now()}`
+  if (r.query.group) r.url = `${r.url}&group=${r.query.group}`
   return axios(r).then(res => res.data)
 }
 
 exports.create = function (project) {
   const swaggerUrl = project.swagger_url.split('?')[0]
-  const params = {url: swaggerUrl}
+  const swaggerUrlQuery = qs.parse(project.swagger_url.split('?')[1])
+  const params = {url: swaggerUrl, query: swaggerUrlQuery}
 
   // 属性转换，解决 1.2 转换到 2.0 时无法对数组生成实体对象的问题
   // {items: {type: 'Action'}} => {items: {$ref: '#/definitions/Action'}}

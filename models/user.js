@@ -12,7 +12,17 @@ const schema = new Schema({
   create_at: {
     type: Date,
     default: Date.now
-  }
+  },
+  projects: [{
+    project: {
+      type: Schema.Types.ObjectId,
+      ref: 'Project'
+    },
+    currentCase: {
+      type: String,
+      default: 'default'
+    }
+  }]
 })
 
 schema.index({ name: 1 }, { unique: true })

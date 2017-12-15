@@ -8,9 +8,10 @@ const util = require('./')
 const p = require('../proxy')
 
 const projectProxy = p.Project
+const userProxy = p.User
 const mockProxy = p.Mock
 
-exports.createExample = function (userId) {
+exports.createExample = function * (userId) {
   const commMode = config.get('mockExample.common')
   const randomMode = config.get('mockExample.random')
   const getFunction = config.get('mockExample.getFunction')
@@ -56,20 +57,27 @@ exports.createExample = function (userId) {
   ]
 
   // 创建演示demo
-  return projectProxy
+  const projects = yield projectProxy
     .newAndSave({
       user: userId,
       name: '演示项目',
       url: '/example',
+      cases: ['default'],
       description: '已创建多种 Mock 类型，只需点击预览便可查看效果。亦可编辑，也可删除。'
     })
-    .then(projects => mockProxy.newAndSave(mocks.map(item => ({
-      project: projects[0].id,
-      description: item.desc,
-      method: item.method,
-      url: item.url,
-      mode: item.mode
-    }))))
+  mockProxy.newAndSave(mocks.map(item => ({
+    project: projects[0].id,
+    description: item.desc,
+    method: item.method,
+    url: item.url,
+    mode: item.mode
+  })))
+  const user = yield userProxy.getById(userId)
+  user.projects.push({
+    project: projects[0].id,
+    currentCase: 'default'
+  })
+  yield userProxy.update(user)
 }
 
 exports.getParams = function (mockUrl, reqUrl) {
