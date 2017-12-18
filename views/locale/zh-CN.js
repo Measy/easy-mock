@@ -162,11 +162,12 @@ export default {
       member: '项目成员',
       keyboards: [
         { category: '导航' },
-        { category: '操作', list: ['创建接口', '添加 / 移除工作台', '同步 Swagger'] }
+        { category: '操作', list: ['新增场景', '删除当前场景', '创建接口', '添加 / 移除工作台', '同步 Swagger'] }
       ],
       columns: ['描述', '操作'],
       action: ['预览接口', '编辑接口', '复制接口地址', '克隆', '删除'],
       copySuccess: '接口地址已复制到剪贴板',
+      changeCaseSuccess: '场景已切换',
       syncSwagger: {
         action: '同步 Swagger',
         warning: '请先在设置页配置 Swagger 接口地址',
@@ -180,6 +181,20 @@ export default {
       create: {
         action: '创建接口',
         success: '创建成功'
+      },
+      add: {
+        action: '新增场景',
+        success: '场景新增成功',
+        noneApiCaseNameErr: '请填写apicase名！',
+        modalTitle: '新增场景',
+        apiCaseName: '新增场景名称'
+      },
+      delete: {
+        action: '删除场景',
+        success: '场景删除成功',
+        deleteDefaultErr: '不可删除default case!',
+        confirmTitle: '提示',
+        confirmContent: '该操作无法撤消，是否删除当前场景'
       },
       expand: {
         description: '描述',

@@ -232,18 +232,19 @@ exports.update = function * () {
   if (memberIds &&
     memberIds.length !== project.members.length) {
     // 获取操作状态 添加 or 移除
-    const isAddMember = memberIds.length > project.members.length
-    const diff = _.xor(memberIds, project.members.map(o => o.id))
+    const addMembers = _.difference(memberIds, project.members)
+    const delMembers = _.difference(project.members, memberIds)
 
-    if (isAddMember) {
-      yield userProjectProxy.newAndSave(diff.map(userId => ({
+    if (addMembers.length > 0) {
+      yield userProjectProxy.newAndSave(addMembers.map(userId => ({
         user: userId,
         project: project.id
       })))
-    } else {
+    }
+    if (delMembers.length > 0) {
       yield userProjectProxy.del({
         project: project.id,
-        user: { $in: diff }
+        user: { $in: delMembers }
       })
     }
   }
@@ -440,12 +441,17 @@ exports.copyCase = function * () {
   // 获取待复制项目指定场景下所有 mock
   const mocks = yield mockProxy.find({ project: id, case: srcCase })
 
+  const project = mocks[0].project
+
+  if (project.cases.includes(caseName)) {
+    this.body = this.util.refail('复制场景失败，该场景已存在')
+    return
+  }
+
   if (mocks.length === 0) {
     this.body = this.util.refail('复制场景失败，该场景下无 Mock 数据')
     return
   }
-
-  const project = mocks[0].project
 
   // 创建项目，只创建已有 mock。
   // 此时 swagger_url 无效

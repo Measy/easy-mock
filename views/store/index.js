@@ -27,7 +27,8 @@ export function createStore () {
           list: [],
           project: {},
           keywords: '',
-          pageIndex: 1
+          pageIndex: 1,
+          apiCase: 'default'
         },
         ...mock
       },

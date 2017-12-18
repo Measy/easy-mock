@@ -162,11 +162,12 @@ export default {
       member: 'Member List',
       keyboards: [
         { category: 'Navigation' },
-        { category: 'Action', list: ['Create new Mock', 'Add / Remove Work Station', 'Sync with Swagger'] }
+        { category: 'Action', list: ['Create new Case', 'Delete current Case', 'Create new Mock', 'Add / Remove Work Station', 'Sync with Swagger'] }
       ],
       columns: ['Description', 'Action'],
       action: ['Preview Mock', 'Edit Mock', 'Copy Mock Address', 'Copy', 'Delete'],
       copySuccess: 'Project address is in clipboard',
+      changeCaseSuccess: 'Api case has changed:',
       syncSwagger: {
         action: 'Sync Swagger',
         warning: 'Please set up Swagger API address in settings page',
@@ -180,6 +181,20 @@ export default {
       create: {
         action: 'Create Mock',
         success: 'Create Success'
+      },
+      add: {
+        action: 'Create new Case',
+        success: 'Create api case success',
+        noneApiCaseNameErr: 'Plz input apicase value！',
+        modalTitle: 'New api case',
+        apiCaseName: 'Api case name'
+      },
+      delete: {
+        action: 'Delete current Case',
+        success: 'Delete api case success',
+        deleteDefaultErr: 'Can not delete default case!',
+        confirmTitle: 'Tips',
+        confirmContent: 'This action <strong>CANNOT<strong> be undone. Are you sure want to delete current api case?'
       },
       expand: {
         description: 'Description',
