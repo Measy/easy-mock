@@ -1,20 +1,8 @@
-import iView from 'iview'
 import * as api from '../../api'
 import Vue from 'vue'
 
 export default {
   namespaced: true,
-  state: {
-    list: [],
-    project: {},
-    page: {
-      description: '',
-      title: ''
-    },
-    keywords: '',
-    pageIndex: 1,
-    apiCase: 'default'
-  },
   mutations: {
     SET_VALUE (state, payload) {
       state.list = state.pageIndex === 1
@@ -31,9 +19,6 @@ export default {
     SET_REQUEST_PARAMS (state, payload) {
       state.keywords = payload.keywords || state.keywords
       state.pageIndex = payload.pageIndex || state.pageIndex
-    },
-    SET_PAGE (state, payload) {
-      state.page = payload
     },
     SET_API_CASE (state, payload) {
       state.apiCase = payload
@@ -82,19 +67,18 @@ export default {
       }
       return res
     },
-    CREATE ({commit, dispatch}, {route, mode, description, url, method, api_case}) {
+    CREATE ({commit, dispatch}, {route, mode, description, url, method, apiCase}) {
       return api.mock.create({
         data: {
           mode,
           url,
           method,
           description,
-          api_case,
+          api_case: apiCase,
           project_id: route.params.id
         }
       }).then((res) => {
         if (res.data.success) {
-          iView.Message.success('创建成功')
           commit('SET_REQUEST_PARAMS', {pageIndex: 1})
           dispatch('FETCH', route)
         }
@@ -108,7 +92,6 @@ export default {
           projectId
         }
       }).then(async res => {
-        iView.Message.success(`已切换到${caseName}成功`)
         commit('SET_API_CASE', caseName)
         commit('SET_REQUEST_PARAMS', {pageIndex: 1})
         await dispatch('FETCH_BY_PROJECTID', projectId)
@@ -126,7 +109,6 @@ export default {
         if (res.data.success) {
           commit('SET_REQUEST_PARAMS', { pageIndex: 1 })
           commit('SET_API_CASE_CREATED', {...res.data.data, caseName})
-          iView.Message.success(`创建${caseName}成功`)
         }
         return res
       })
@@ -137,7 +119,6 @@ export default {
         projectId
       }).then(async res => {
         if (res.data.success) {
-          iView.Message.success('删除场景成功')
           commit('SET_REQUEST_PARAMS', { pageIndex: 1 })
           commit('SET_API_CASE', 'default')
           await dispatch('FETCH_BY_PROJECTID', projectId)

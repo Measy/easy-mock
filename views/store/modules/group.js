@@ -1,11 +1,7 @@
-import iView from 'iview'
 import * as api from '../../api'
 
 export default {
   namespaced: true,
-  state: {
-    list: []
-  },
   mutations: {
     SET_VALUE (state, payload) {
       state.list = payload
@@ -27,9 +23,9 @@ export default {
         }
       }).then((res) => {
         if (res.data.success) {
-          iView.Message.success('创建成功')
           return dispatch('FETCH')
         }
+        return res.data
       })
     },
     JOIN ({ dispatch }, groupName) {
@@ -39,12 +35,12 @@ export default {
             data: { id: res.data[0]._id }
           }).then((res) => {
             if (res.data.success) {
-              iView.Message.success('已加入 ' + groupName)
               return dispatch('FETCH')
             }
+            return res.data
           })
         } else {
-          iView.Message.info(groupName + ' 不存在')
+          return { success: false }
         }
       })
     },
@@ -53,9 +49,9 @@ export default {
         data: { id: groupId }
       }).then((res) => {
         if (res.data.success) {
-          iView.Message.success('操作成功')
           return dispatch('FETCH')
         }
+        return res.data
       })
     },
     RENAME ({ dispatch }, group) {
@@ -66,9 +62,9 @@ export default {
         }
       }).then((res) => {
         if (res.data.success) {
-          iView.Message.success('更新成功')
           return dispatch('FETCH')
         }
+        return res.data
       })
     }
   }

@@ -10,27 +10,30 @@
     <editor :currentCase="currentCase" v-model="editor"></editor>
     <Modal
       v-model="optCase.show"
-      title="新增api场景"
+      :title="$t('p.detail.add.modalTitle')"
       :loading="optCase.loading"
       @on-ok="newApiCase">
       <Form ref="optCase" :model="optCase" :label-width="100">
-          <FormItem label="新增场景名字" prop="caseName">
+          <FormItem :label="$t('p.detail.add.apiCaseName')" prop="caseName">
               <Input type="text" v-model="optCase.caseName"></Input>
           </FormItem>
           <FormItem label="copy from" prop="srcCase">
               <i-select v-model="optCase.srcCase" key="select1">
-                  <Option v-for="casename in project.cases" :value="casename" :key="`select1${casename}`">{{ casename }}</Option>
+                  <Option v-for="casename in project.cases" :value="casename" :key="casename">{{ casename }}</Option>
               </i-select>
           </FormItem>
       </Form>
     </Modal>
     <div v-shortkey="['tab']" @shortkey="handleKeyTab()"></div>
     <em-keyboard-short v-model="keyboards"></em-keyboard-short>
+    <Back-top>
+      <em-add icon="arrow-up-c" :bottom="90"></em-add>
+    </Back-top>
     <transition name="fade" mode="out-in">
-      <project v-if="pageName === '设置'" key="a" :project-data="project"></project>
+      <project v-if="pageName === $t('p.detail.nav[1]')" key="a" :project-data="project"></project>
       <div
         class="em-container"
-        v-if="pageAnimated && pageName === '接口列表'"
+        v-if="pageAnimated && pageName === $t('p.detail.nav[0]')"
         key="b">
         <div class="em-proj-detail__info">
           <Row>
@@ -57,30 +60,30 @@
         <div class="em-proj-detail__switcher">
           <ul>
             <li @click="optCase.show = true" v-shortkey="['ctrl', 'a']" @shortkey="optCase.show = true">
-              <Icon type="plus-round"></Icon> 新增场景
+              <Icon type="plus-round"></Icon> {{$t('p.detail.add.action')}}
             </li>
             <li @click="deleteCurCase" v-shortkey="['ctrl', 'd']" @shortkey="deleteCurCase">
-              <Icon type="trash-a"></Icon> 删除当前场景
+              <Icon type="trash-a"></Icon> {{$t('p.detail.delete.action')}}
             </li>
-            <li @click="openEditor()" v-shortkey="['ctrl', 'c']" @shortkey="openEditor()">
-              <Icon type="plus-round"></Icon> 创建接口
+            <li @click="openEditor()" v-shortkey="['ctrl', 'n']" @shortkey="openEditor()">
+              <Icon type="plus-round"></Icon> {{$t('p.detail.create.action')}}
             </li>
             <li @click="handleWorkbench" v-shortkey="['ctrl', 'w']" @shortkey="handleWorkbench">
               <transition name="zoom" mode="out-in">
                 <Icon :type="project.extend.is_workbench ? 'android-star' : 'android-star-outline'"
                   :key="project.extend.is_workbench"></Icon>
               </transition>
-              工作台
+              {{$t('p.detail.workbench')}}
             </li>
             <li @click="updateBySwagger" v-shortkey="['ctrl', 's']" @shortkey="updateBySwagger">
-              <Icon type="loop"></Icon> 同步 Swagger
+              <Icon type="loop"></Icon> {{$t('p.detail.syncSwagger.action')}}
             </li>
-            <li @click="download"><Icon type="code-download"></Icon> 打包下载</li>
+            <li @click="download"><Icon type="code-download"></Icon> {{$tc('p.detail.download', 1)}}</li>
           </ul>
         </div>
         <div class="em-proj-detail__members" v-if="project.members.length">
           <em-spots :size="6"></em-spots>
-          <h2><Icon type="person-stalker"></Icon> 项目成员</h2>
+          <h2><Icon type="person-stalker"></Icon> {{$t('p.detail.member')}}</h2>
           <Row :gutter="20">
             <Col span="2" v-for="(item, index) in project.members" :key="index">
               <img :src="item.head_img" :title="item.nick_name"/>
@@ -90,7 +93,7 @@
         <div class="em-proj-detail_cases">
             <h2>场景切换</h2>
             <i-select v-model="currentCase" key="select2">
-              <Option v-for="casename in project.cases" :value="casename" :label="casename" :key="`select2${casename}`"></Option>
+              <Option v-for="casename in project.cases" :value="casename" :label="casename" :key="casename"></Option>
             </i-select>
         </div>
         <Table
@@ -122,7 +125,7 @@ export default {
   name: 'projectDetail',
   data () {
     return {
-      pageName: '接口列表',
+      pageName: this.$t('p.detail.nav[0]'),
       selection: [],
       keywords: '',
       optCase: {
@@ -132,35 +135,30 @@ export default {
         srcCase: 'default'
       },
       nav: [
-        { title: '接口列表', icon: 'android-list' },
-        { title: '设置', icon: 'gear-a' }
+        { title: this.$t('p.detail.nav[0]'), icon: 'android-list' },
+        { title: this.$t('p.detail.nav[1]'), icon: 'gear-a' }
       ],
       editor: {
         show: false
       },
       keyboards: [
         {
-          category: '导航',
+          category: this.$t('p.detail.keyboards[0].category'),
           list: [
-            { description: '接口列表/设置', shorts: ['tab'] }
+            {
+              description: `${this.$t('p.detail.nav[0]')}/${this.$t('p.detail.nav[1]')}`,
+              shorts: ['tab']
+            }
           ]
         },
         {
-          category: '操作',
+          category: this.$t('p.detail.keyboards[1].category'),
           list: [
-            { description: '新增场景', shorts: ['ctrl', 'a'] },
-            { description: '删除当前场景', shorts: ['ctrl', 'd'] },
-            { description: '创建接口', shorts: ['ctrl', 'c'] },
-            { description: '添加 / 移除工作台', shorts: ['ctrl', 'w'] },
-            { description: '同步 Swagger', shorts: ['ctrl', 's'] }
-          ]
-        },
-        {
-          category: '编辑界面（非编辑状态有效）',
-          list: [
-            { description: '关闭', shorts: ['ctrl', 'x'] },
-            { description: '格式化', shorts: ['ctrl', 'f'] },
-            { description: '预览（只在更新时生效）', shorts: ['ctrl', 'v'] }
+            { description: this.$t('p.detail.keyboards[1].list[0]'), shorts: ['ctrl', 'a'] },
+            { description: this.$t('p.detail.keyboards[1].list[1]'), shorts: ['ctrl', 'd'] },
+            { description: this.$t('p.detail.keyboards[1].list[2]'), shorts: ['ctrl', 'n'] },
+            { description: this.$t('p.detail.keyboards[1].list[3]'), shorts: ['ctrl', 'w'] },
+            { description: this.$t('p.detail.keyboards[1].list[4]'), shorts: ['ctrl', 's'] }
           ]
         }
       ],
@@ -197,7 +195,7 @@ export default {
               post: 'green',
               delete: 'red',
               put: 'yellow',
-              patch: ''
+              patch: 'yellow'
             }
             return <tag class="method-tag" color={color[params.row.method]}>
               {params.row.method.toUpperCase()}
@@ -205,9 +203,9 @@ export default {
           }
         },
         { title: 'URL', width: 420, ellipsis: true, sortable: true, key: 'url' },
-        { title: '描述', ellipsis: true, key: 'description' },
+        { title: this.$t('p.detail.columns[0]'), ellipsis: true, key: 'description' },
         {
-          title: '操作',
+          title: this.$t('p.detail.columns[1]'),
           key: 'action',
           width: 160,
           align: 'center',
@@ -215,16 +213,16 @@ export default {
             return (
               <div>
                 <Button-group>
-                  <i-button size="small" title="预览接口" onClick={this.preview.bind(this, params.row)}><icon type="eye"></icon></i-button>
-                  <i-button size="small" title="编辑接口" onClick={this.openEditor.bind(this, params.row)}><icon type="edit"></icon></i-button>
-                  <i-button size="small" title="复制接口地址" class="copy-url" onClick={this.clip.bind(this, params.row.url)}><icon type="link"></icon></i-button>
+                  <i-button size="small" title={this.$t('p.detail.action[0]')} onClick={this.preview.bind(this, params.row)}><icon type="eye"></icon></i-button>
+                  <i-button size="small" title={this.$t('p.detail.action[1]')} onClick={this.openEditor.bind(this, params.row)}><icon type="edit"></icon></i-button>
+                  <i-button size="small" title={this.$t('p.detail.action[2]')} class="copy-url" onClick={this.clip.bind(this, params.row.url)}><icon type="link"></icon></i-button>
                 </Button-group>
                 <dropdown>
                   <i-button size="small"><icon type="more"></icon></i-button>
                   <dropdown-menu slot="list">
-                    <dropdown-item nativeOnClick={this.clone.bind(this, params.row)}><icon type="ios-copy"></icon> 克隆</dropdown-item>
-                    <dropdown-item nativeOnClick={this.download.bind(this, params.row._id)}><icon type="ios-download"></icon> 下载</dropdown-item>
-                    <dropdown-item nativeOnClick={this.remove.bind(this, params.row._id)}><icon type="trash-b"></icon> 删除</dropdown-item>
+                    <dropdown-item nativeOnClick={this.clone.bind(this, params.row)}><icon type="ios-copy"></icon> {this.$t('p.detail.action[3]')}</dropdown-item>
+                    <dropdown-item nativeOnClick={this.download.bind(this, params.row._id)}><icon type="ios-download"></icon> {this.$tc('p.detail.download', 2)}</dropdown-item>
+                    <dropdown-item nativeOnClick={this.remove.bind(this, params.row._id)}><icon type="trash-b"></icon> {this.$t('p.detail.action[4]')}</dropdown-item>
                   </dropdown-menu>
                 </dropdown>
               </div>
@@ -236,11 +234,7 @@ export default {
   },
   asyncData ({ store, route }) {
     store.commit('mock/INIT_REQUEST')
-    return store.dispatch('mock/FETCH', route).then((data) => {
-      store.commit('mock/SET_PAGE', {
-        description: data.project.user ? '个人项目' : '团队项目'
-      })
-    })
+    return store.dispatch('mock/FETCH', route)
   },
   mounted () {
     this.$on('query', debounce((keywords) => {
@@ -261,7 +255,11 @@ export default {
         : list
     },
     page () {
-      return this.$store.state.mock.page
+      return {
+        description: this.project.user
+          ? this.$t('p.detail.header.description[0]')
+          : this.$t('p.detail.header.description[1]')
+      }
     },
     currentCase: {
       get: function () {
@@ -269,7 +267,9 @@ export default {
         return this.$store.state.mock.apiCase
       },
       set: async function (val) {
-        await this.$store.dispatch('mock/CHOSE_CASE', {caseName: val, projectId: this.project._id})
+        await this.$store.dispatch('mock/CHOSE_CASE', {caseName: val, projectId: this.project._id}).then(res => {
+          if (res.data.success) this.$Message.success(`${this.$t('p.detail.changeCaseSuccess')}${val}`)
+        })
       }
     },
     baseUrl () {
@@ -282,7 +282,9 @@ export default {
   },
   methods: {
     handleKeyTab () {
-      this.pageName = this.pageName === '设置' ? '接口列表' : '设置'
+      this.pageName = this.pageName === this.$t('p.detail.nav[1]')
+        ? this.$t('p.detail.nav[0]')
+        : this.$t('p.detail.nav[1]')
     },
     clip (mockUrl) {
       const clipboard = new Clipboard('.copy-url', {
@@ -293,13 +295,13 @@ export default {
       clipboard.on('success', (e) => {
         e.clearSelection()
         clipboard.destroy()
-        this.$Message.success('接口地址已复制到剪贴板')
+        this.$Message.success(this.$t('p.detail.copySuccess'))
       })
     },
     newApiCase () { // 这里新建case之后会默认选中新建的场景，实际上展示了新建的场景，但是select组件的截流器设置bug，导致选中的是默认第一个，暂时先在源码中修改，后面再起一个pr
       this.optCase.loading = true
       if (!this.optCase.caseName) {
-        this.$Message.error('请填写apicase名！')
+        this.$Message.error(this.$t('p.detail.add.noneApiCaseNameErr'))
         this.optCase.loading = false
         return
       }
@@ -309,6 +311,7 @@ export default {
         srcCase: this.optCase.srcCase
       }).then(res => {
         if (res.data.success) {
+          this.$Message.success(`${this.optCase.caseName} ${this.$t('p.detail.add.success')}`)
           this.optCase = {
             show: false,
             loading: true,
@@ -320,16 +323,20 @@ export default {
     },
     deleteCurCase () {
       if (this.currentCase === 'default') {
-        this.$Message.error('不可删除default case!')
+        this.$Message.error(this.$t('p.detail.delete.deleteDefaultErr'))
         return
       }
       this.$Modal.confirm({
-        title: '提示',
-        content: `该操作无法撤消，是否删除当前场景${this.currentCase}`,
+        title: this.$t('p.detail.delete.confirmTitle'),
+        content: `${this.$t('p.detail.delete.confirmContent')}${this.currentCase}`,
         onOk: () => {
           this.$store.dispatch('mock/DELETE_CASE', {
             caseName: encodeURIComponent(this.currentCase),
             projectId: this.project._id
+          }).then(res => {
+            if (res.data.success) {
+              this.$Message.success(`${this.currentCase}: ${this.$t('p.detail.delete.success')}`)
+            }
           })
         }
       })
@@ -352,18 +359,18 @@ export default {
     },
     updateBySwagger () {
       if (!this.project.swagger_url) {
-        this.$Message.warning('请先在设置页配置 Swagger 接口地址')
+        this.$Message.warning(this.$t('p.detail.syncSwagger.warning'))
         return
       }
       this.$Modal.confirm({
-        title: '提示',
-        content: '该操作将同步最新 Swagger 接口，是否继续？',
+        title: this.$t('confirm.title'),
+        content: this.$t('p.detail.syncSwagger.confirm'),
         onOk: () => {
           api.project.updateSwagger({
             data: { id: this.project._id }
           }).then((res) => {
             if (res.data.success) {
-              this.$Message.success('同步成功')
+              this.$Message.success(this.$t('p.detail.syncSwagger.success'))
               this.$store.commit('mock/SET_REQUEST_PARAMS', {pageIndex: 1})
               this.$store.dispatch('mock/FETCH', this.$route)
             }
@@ -377,14 +384,14 @@ export default {
         ? this.selection.map(item => item._id)
         : [mockId]
       this.$Modal.confirm({
-        title: '提示',
-        content: '该操作无法撤消，' + (ids.length > 1 ? '是否继续删除选中行?' : '是否继续删除?'),
+        title: this.$t('confirm.title'),
+        content: ids.length > 1 ? this.$t('p.detail.remove.confirm[0]') : this.$t('p.detail.remove.confirm[1]'),
         onOk: () => {
           api.mock.delete({
             data: { ids }
           }).then((res) => {
             if (res.data.success) {
-              this.$Message.success('删除成功')
+              this.$Message.success(this.$t('p.detail.remove.success'))
               this.$store.commit('mock/SET_REQUEST_PARAMS', { pageIndex: 1 })
               this.$store.dispatch('mock/FETCH', this.$route)
             }
@@ -401,6 +408,10 @@ export default {
         api_case: this.currentCase,
         ...mock,
         url: `${mock.url}_copy_${new Date().getTime()}`
+      }).then(res => {
+        if (res.data.success) {
+          this.$Message.success(this.$t('p.detail.create.success'))
+        }
       })
     },
     openEditor (mock) {

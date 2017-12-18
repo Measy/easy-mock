@@ -30,7 +30,11 @@
                 </Submenu>
                 <Menu-item
                   name="101"
-                  @click.native="$router.push('/changelog')">更新日志</Menu-item>
+                  @click.native="toChangelog">
+                  <Badge dot :count="readChangelog ? '0' : '1'">
+                    {{$tc('p.docs.header.title', 2)}}
+                  </Badge>
+                </Menu-item>
               </Menu>
             </Affix>
           </transition>
@@ -63,11 +67,38 @@
 
 <script>
 import docs from './docs'
+import docsZh from './docs.zh-CN'
 import changelog from '../../../CHANGELOG'
 
 export default {
   name: 'document',
-  components: { docs, changelog },
+  components: {
+    changelog: {
+      components: {
+        changelog
+      },
+      render () {
+        return <changelog ref="changeLog"></changelog>
+      },
+      mounted () {
+        const lis = this.$refs.changeLog.$el.querySelectorAll('li')
+        for (let len = lis.length, i = 0; i < len; i += 1) {
+          lis[i].innerHTML = lis[i].innerHTML.replace(/#(\d+)/g, '<a href="https://github.com/easy-mock/easy-mock/issues/$1" target="_blank">#$1</a>')
+        }
+      }
+    },
+    docs: {
+      components: {
+        docs,
+        docsZh
+      },
+      render () {
+        const locale = this.$ls.get('locale') || 'zh-CN'
+        if (locale === 'en') return <docs></docs>
+        return <docs-zh></docs-zh>
+      }
+    }
+  },
   data () {
     return {
       nav: [],
@@ -84,6 +115,12 @@ export default {
     },
     isChangelog () {
       return this.$route.path === '/changelog'
+    },
+    readChangelog () {
+      return this.$store.state.app.readChangelog
+    },
+    appVersion () {
+      return this.$store.state.app.version
     }
   },
   mounted () {
@@ -124,14 +161,19 @@ export default {
     changeFixed (isFixed) {
       this.isFixed = isFixed
     },
+    toChangelog () {
+      this.$store.commit('app/SET_READ_CHANGELOG', true)
+      this.$ls.set('version', this.appVersion)
+      this.$router.push('/changelog')
+    },
     changeRoute () {
       this.isFixed = false
       if (this.isChangelog) {
-        this.page.title = '更新日志'
-        this.page.description = '更新永无止境，只为让你开心。'
+        this.page.title = this.$tc('p.docs.header.title', 2)
+        this.page.description = this.$tc('p.docs.header.description', 2)
       } else {
-        this.page.title = '文档'
-        this.page.description = '阅读文档能使你完全掌握 Easy Mock 的使用。'
+        this.page.title = this.$tc('p.docs.header.title', 1)
+        this.page.description = this.$tc('p.docs.header.description', 1)
       }
     }
   }

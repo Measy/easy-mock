@@ -14,6 +14,7 @@ const pathToRegexp = require('path-to-regexp')
 const staticCache = require('koa-static-cache')
 const koaBunyanLogger = require('koa-bunyan-logger')
 
+const util = require('./util')
 const logger = require('./util/log')
 const middleware = require('./middlewares')
 const routerConfig = require('./router-config')
@@ -25,9 +26,11 @@ const isProd = process.env.NODE_ENV === 'production'
 const serve = (pf, filePath, cache) => staticCache(resolve(filePath), {
   prefix: pf,
   gzip: true,
+  dynamic: true,
   maxAge: cache && isProd ? 60 * 60 * 24 * 30 : 0
 })
 
+util.dropFileSchedule()
 validate(app)
 
 const requestLogger = isProd
@@ -40,10 +43,15 @@ app
   .use(favicon(path.join(__dirname, '/public/images/icon.png')))
   .use(serve('/dist', './dist'))
   .use(serve('/public', './public'))
+  .use(serve('/upload', path.resolve(__dirname, 'config', config.get('upload').dir)))
   .use(koaBunyanLogger(logger))
   .use(koaBunyanLogger.requestIdContext())
   .use(requestLogger)
-  .use(cors())
+  .use(cors({
+    methods: 'GET,HEAD,PUT,POST,DELETE,PATCH',
+    credentials: true,
+    maxAge: 2592000
+  }))
   .use(error())
   .use(bodyParser())
   .use(middleware.common)
@@ -53,7 +61,7 @@ app
     jwtExp: config.get('jwt.expire'),
     collection: config.get('jwt.collection'),
     jwtOptions: {
-      secret: config.get('jwt.key'),
+      secret: config.get('jwt.secret'),
       key: config.get('jwt.key')
     },
     jwtUnless () {

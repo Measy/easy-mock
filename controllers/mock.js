@@ -391,7 +391,7 @@ exports.getMock = function * () {
     sandbox: {
       Mock: Mock,
       mode: mock.mode,
-      template: new Function("return " + mock.mode)() // eslint-disable-line
+      template: new Function(`return ${mock.mode}`) // eslint-disable-line
     }
   })
 
@@ -399,8 +399,34 @@ exports.getMock = function * () {
     // 只负责数据验证，检测 setTimeout 等方法
     vm.run('Mock.mock(new Function("return " + mode)())')
     // 解决正则表达式失效的问题
-    data = vm.run('Mock.mock(template)')
+    data = vm.run('Mock.mock(template())')
+
     yield mockCountProxy.newAndSave(mock.id)
+    // 开始处理自定义响应
+    if (data._res) {
+      let _res = data._res
+      if (_res.cookies) {
+        for (let i in _res.cookies) {
+          if (_res.cookies.hasOwnProperty(i)) {
+            this.cookies.set(i, _res.cookies[i])
+          }
+        }
+      }
+      if (_res.status) {
+        this.status = _res.status
+      }
+      if (_res.headers) {
+        for (let i in _res.headers) {
+          if (_res.headers.hasOwnProperty(i)) {
+            this.set(i, _res.headers[i])
+          }
+        }
+      }
+      if (_res.status && parseInt(_res.status) !== 200 && _res.data) {
+        data = _res.data
+      }
+      delete data['_res']
+    }
     if (callbackName) {
       this.type = 'text/javascript'
       // JSON parse vs eval fix. https://github.com/rack/rack-contrib/pull/37
