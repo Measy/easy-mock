@@ -273,7 +273,7 @@ export default {
       }
     },
     baseUrl () {
-      const baseUrl = location.origin + config.mockPrefix + this.project._id + '/' + this.project.user._id
+      const baseUrl = location.origin + config.mockPrefix + this.project._id + '/' + this.$store.state.user.id
       return this.project.url === '/' ? baseUrl : baseUrl + this.project.url
     },
     group () {

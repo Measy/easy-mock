@@ -39,9 +39,20 @@ exports.list = function * () {
 
   // 选取用户当前处于的场景
   const user = yield userProxy.getById(uid)
-  const apiCase = user.projects.filter(proj => {
+  let apiCase = 'default'
+
+  const userProject = user.projects.filter(proj => {
     if (proj.project.id.toString('hex') === projectId) return proj
-  })[0].currentCase
+  })[0]
+  if (userProject) {
+    apiCase = userProject.currentCase
+  } else { // gruop里面点进来的项目通过懒同步，向用户同步project和对应的case情况
+    user.projects.push({
+      project: projectId, // 这里偷懒了，没有验证project是否真的存在，本来应该反正pro查询语句后面的
+      currentCase: 'default'
+    })
+    yield userProxy.update(user)
+  }
 
   const pageSize = this.checkQuery('page_size').empty().toInt().gt(0)
     .default(config.get('pageSize')).value

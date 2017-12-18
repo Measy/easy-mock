@@ -159,10 +159,8 @@ exports.create = function * () {
 
   const project = yield projectProxy.findOne(findQuery)
 
-  if (project) {
-    this.body = project.name === name
-      ? this.util.refail('创建失败，与现有项目同名')
-      : this.util.refail('创建失败，与现有项目的 URL 相同')
+  if (project && project.name === name) {
+    this.body = this.util.refail('创建失败，与现有项目同名')
     return
   }
 
@@ -236,12 +234,35 @@ exports.update = function * () {
     const delMembers = _.difference(project.members, memberIds)
 
     if (addMembers.length > 0) {
+      yield Promise.all(addMembers.map(member => new Promise((resolve, reject) => {
+        userProxy.getById(member).then(user => {
+          user.projects.push({
+            project: id,
+            currentCase: 'default'
+          })
+          userProxy.update(user).then(() => { resolve() })
+        })
+      })))
+      // yield Promise.all(addMembers.map(function * (men) {
+      //   const user = yield userProxy.getById(men)
+      //   user.projects.push({
+      //     project: id,
+      //     currentCase: 'default'
+      //   })
+      //   return userProxy.update(user)
+      // }))
       yield userProjectProxy.newAndSave(addMembers.map(userId => ({
         user: userId,
         project: project.id
       })))
     }
     if (delMembers.length > 0) {
+      yield Promise.all(delMembers.map(member => new Promise((resolve, reject) => {
+        userProxy.getById(member).then(user => {
+          user.projects = user.projects.filter(proj => proj.project.toString('hex') !== id)
+          userProxy.update(user).then(() => { resolve() })
+        })
+      })))
       yield userProjectProxy.del({
         project: project.id,
         user: { $in: delMembers }
