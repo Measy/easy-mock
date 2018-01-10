@@ -427,7 +427,8 @@ exports.copy = function * () {
     name: newName,
     url: newUrl,
     description: project.description,
-    swagger_url: project.swagger_url
+    swagger_url: project.swagger_url,
+    cases: project.cases
   }).then(projects => {
     // 往user表里面塞关联的project信息
     const user = userProxy.getById(uid)
@@ -440,8 +441,10 @@ exports.copy = function * () {
       project: projects[0].id,
       description: item.description,
       method: item.method,
+      isCurrent: item.isCurrent,
       url: item.url,
-      mode: item.mode
+      mode: item.mode,
+      case: item.case
     })))
   })
 
@@ -489,6 +492,7 @@ exports.copyCase = function * () {
     description: item.description,
     method: item.method,
     url: item.url,
+    isCurrent: item.isCurrent,
     mode: item.mode,
     case: caseName
   }))))

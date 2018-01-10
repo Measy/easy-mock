@@ -54,7 +54,8 @@ function updateAndMeargeMock (projectId, swaggerDocs, caseName) {
             parameters,
             response_model: responseModel,
             description: desc,
-            project: projectId
+            project: projectId,
+            isCurrent: true
           })
           continue
         }
