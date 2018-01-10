@@ -158,7 +158,8 @@ const mock = {
   update: config => createAPI('/mock/update', 'post', config),
   delete: config => createAPI('/mock/delete', 'post', config),
   export: config => createExportForm('/mock/export', config),
-  choseCase: config => createAPI('/u/project/update', 'put', config)
+  choseCase: config => createAPI('/u/project/update', 'put', config),
+  setCurrent: mockId => createAPI(`/mock/${mockId}/current`, 'put')
 }
 
 const group = {

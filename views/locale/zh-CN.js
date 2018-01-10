@@ -165,9 +165,8 @@ export default {
         { category: '操作', list: ['新增场景', '删除当前场景', '创建接口', '添加 / 移除工作台', '同步 Swagger'] }
       ],
       columns: ['描述', '操作'],
-      action: ['预览接口', '编辑接口', '复制接口地址', '克隆', '删除'],
+      action: ['预览接口', '编辑接口', '复制接口地址', '克隆', '删除', '当前可用', '点击可用'],
       copySuccess: '接口地址已复制到剪贴板',
-      changeCaseSuccess: '场景已切换',
       syncSwagger: {
         action: '同步 Swagger',
         warning: '请先在设置页配置 Swagger 接口地址',
@@ -178,9 +177,14 @@ export default {
         confirm: ['该操作无法撤消，是否继续删除选中行? ', '该操作无法撤消，是否继续删除?'],
         success: '删除成功'
       },
+      setCurrentSuccess: '接口激活成功',
       create: {
         action: '创建接口',
         success: '创建成功'
+      },
+      chose: {
+        action: '场景切换',
+        success: '场景已切换'
       },
       add: {
         action: '新增场景',

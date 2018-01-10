@@ -22,6 +22,10 @@ const schema = new Schema({
   case: {
     type: String,
     default: 'default'
+  },
+  isCurrent: {
+    type: Boolean,
+    default: false
   }
 })
 

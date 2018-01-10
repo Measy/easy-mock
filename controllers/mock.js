@@ -70,7 +70,7 @@ exports.list = function * () {
   const opt = {
     skip: (pageIndex - 1) * pageSize,
     limit: pageSize,
-    sort: '-create_at'
+    sort: 'url'
   }
 
   const where = {
@@ -171,23 +171,27 @@ exports.create = function * () {
     return
   }
 
-  // 2.查重, url，method
-  const mock = yield mockProxy.findOne({
+  // 2.查重, url，method。
+  // 新改动，不需要查重了，因为要支持同一个场景下同一个接口的不同返回值
+  const mocks = yield mockProxy.find({
     project: projectId,
     url,
     method,
     case: apiCase
+  }, {
+    sort: '-isCurrent'
   })
 
-  if (mock) {
-    this.body = this.util.refail('创建失败，已存在相同 Mock')
-    return
+  let hasCurrent = false
+  if (mocks.length > 0 && mocks[0].isCurrent) {
+    hasCurrent = true
   }
 
   // 保存
   yield mockProxy.newAndSave({
     project: projectId,
     case: apiCase,
+    isCurrent: !hasCurrent,
     description,
     method,
     url,
@@ -230,25 +234,61 @@ exports.update = function * () {
     return
   }
 
+  const keepOrginal = (mock.url === url) && (mock.method === method) // 只要方法和url一致，就认为是同一个接口，只是变更其他东西
+  if (!keepOrginal) mock.isCurrent = false // 如果接口发生了变更，则isCurrent默认为false
+
   // 更新属性
   mock.url = url || mock.url
   mock.mode = mode || mock.mode
   mock.method = method || mock.method
   mock.description = description || mock.description
 
-  // 更新属性后查重
-  const existMock = yield mockProxy.findOne({
-    _id: { $ne: mock.id },
-    project: project.id,
-    url: mock.url,
-    method: mock.method
-  })
+  yield mockProxy.updateById(mock)
 
-  if (existMock && existMock.case === mock.case) { // 允许新建不同场景的
-    this.body = this.util.refail('更新失败，已存在相同 Mock')
+  this.body = this.util.resuccess()
+}
+
+exports.setCurrent = function * () {
+  const uid = this.state.user.id
+  const id = this.checkParams('id').value
+
+  if (this.errors) {
+    this.body = this.util.refail(null, 10001, this.errors)
     return
   }
 
+  // 获取mock
+  const mock = yield mockProxy.getById(id)
+
+  if (!mock) {
+    this.body = this.util.refail('更新失败，Mock 不存在')
+    return
+  }
+
+  const project = mock.project
+
+  // 权限验证, 这里对group成员是否做了校验没有验证
+  if (project.user && project.user.toString() !== uid &&
+    project.members.indexOf(uid) === -1) {
+    this.body = this.util.refail('更新失败，无权限')
+    return
+  }
+
+  // 改变原先的选择的接口的isCurrent为false
+  const originalCurrent = yield mockProxy.findOne({
+    project: project._id,
+    url: mock.url,
+    method: mock.method,
+    case: mock.case,
+    isCurrent: true
+  })
+  if (originalCurrent) {
+    originalCurrent.isCurrent = false
+    yield mockProxy.updateById(originalCurrent)
+  }
+
+  // 更新新选择的mock的isCurrent为true
+  mock.isCurrent = true
   yield mockProxy.updateById(mock)
 
   this.body = this.util.resuccess()
@@ -268,6 +308,9 @@ exports.delete = function * () {
       $in: ids
     }
   })
+
+  // 筛选出哪些是current的被删除掉了，如果存在多个同接口mock的，则重新设置isCurrent
+  const isCurrentMocks = mocks.filter(mock => mock.isCurrent)
 
   const unMatchMock = mocks.filter((item) => {
     const project = item.project
@@ -291,6 +334,26 @@ exports.delete = function * () {
 
   yield mockProxy.delByIds(ids)
 
+  try {
+    // mongodb单机版本的不支持事务，这种分批次操作的，感觉容易出问题，看看是不是后面替换下数据库
+    yield Promise.all(isCurrentMocks.map(mock => new Promise(async (resolve, reject) => {
+      const mockRemainder = await mockProxy.find({ // 之所以用find而不用findOne，是怕这边删除的瞬间有另一个人更新了isCurrent的mock，就删除的已经部署isCurrent的了
+        url: mock.url,
+        method: mock.method,
+        case: mock.case
+      }, {
+        sort: '-isCurrent'
+      })
+      if (mockRemainder.length > 0 && !mockRemainder[0].isCurrent) {
+        const needSetMock = mockRemainder[0]
+        needSetMock.isCurrent = true
+        await mockProxy.updateById(needSetMock)
+      }
+      resolve()
+    })))
+  } catch (error) {
+    console.log(error)
+  }
   this.body = this.util.resuccess()
 }
 
@@ -352,7 +415,13 @@ exports.getMock = function * () {
     this.throw(404)
   }
 
-  const mock = mocks[0]
+  let mock = mocks.filter(mock => mock.isCurrent)[0]
+
+  if (!mock && mocks.length > 0) { // 如果处于当前的（isCurrent）的mock因被删除的非事务操作失败，导致没有isCurrent为true的
+    mock = mocks[0]
+    mock.isCurrent = true
+    yield mockProxy.updateById(mock)
+  }
 
   Mock.Handler.function = function (options) {
     // /api/{user}/{id} => /api/:user/:id

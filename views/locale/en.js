@@ -167,7 +167,6 @@ export default {
       columns: ['Description', 'Action'],
       action: ['Preview Mock', 'Edit Mock', 'Copy Mock Address', 'Copy', 'Delete'],
       copySuccess: 'Project address is in clipboard',
-      changeCaseSuccess: 'Api case has changed:',
       syncSwagger: {
         action: 'Sync Swagger',
         warning: 'Please set up Swagger API address in settings page',
@@ -178,9 +177,14 @@ export default {
         confirm: ['This action <strong>CANNOT<strong> be undone. Are you sure want to delete selected row?', 'This action <strong>CANNOT<strong> be undone. Do you want contiune?'],
         success: 'Delete Success'
       },
+      setCurrentSuccess: 'the rustful api is active',
       create: {
         action: 'Create Mock',
         success: 'Create Success'
+      },
+      chose: {
+        action: 'Api-Case',
+        success: 'Api case has changed:'
       },
       add: {
         action: 'Create new Case',

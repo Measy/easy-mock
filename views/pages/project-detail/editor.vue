@@ -183,7 +183,7 @@ export default {
         this.$store.dispatch('mock/CREATE', {
           route: this.$route,
           ...this.temp,
-          api_case: this.currentCase,
+          apiCase: this.currentCase,
           url: mockUrl
         }).then((res) => {
           if (res.data.success) {

@@ -10,6 +10,9 @@ export default {
         : state.list.concat(payload.mocks)
       state.project = payload.project
     },
+    SET_LIST (state, payload) {
+      state.list = payload
+    },
     INIT_REQUEST (state) {
       state.keywords = ''
       state.pageIndex = 1
@@ -50,10 +53,10 @@ export default {
         }
       })
     },
-    async FETCH_BY_PROJECTID ({commit, state, rootState}, projectId) { // 懒得传上面FETCH的route参数，copy了新的传projectId的方法
+    async FETCH_BY_PROJECTID ({commit, state}) { // 懒得传上面FETCH的route参数，copy了新的传projectId的方法
       const res = await api.mock.getList({
         params: {
-          project_id: projectId,
+          project_id: state.project._id,
           page_size: 2000, // 不考虑接口分页
           page_index: state.pageIndex,
           keywords: state.keywords,
@@ -64,6 +67,20 @@ export default {
         commit('SET_VALUE', res.data.data)
         state.pageIndex += 1
         commit('SET_REQUEST_PARAMS', { pageIndex: state.pageIndex })
+      }
+      return res
+    },
+    async SET_MOCK_CURRENT ({commit, state}, mockId) {
+      const res = await api.mock.setCurrent(mockId)
+      let mocks = state.list
+      const mockWaitSet = mocks.filter(mock => mock._id === mockId)[0]
+      if (res.data.success) {
+        mocks = mocks.map(mock => {
+          if (mock.url === mockWaitSet.url && mock.method === mockWaitSet.method) mock.isCurrent = false
+          if (mock._id === mockId) mock.isCurrent = true
+          return mock
+        })
+        commit('SET_LIST', mocks)
       }
       return res
     },
