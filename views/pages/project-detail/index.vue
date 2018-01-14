@@ -213,7 +213,7 @@
               return (
                 <div>
                   <Button-group>
-                    <i-button size="small" title={params.row.isCurrent ? this.$t('p.detail.action[5]') : this.$t('p.detail.action[6]')} onClick={this.setApiInterfaceCurrent.bind(this, params.row._id)}><icon type={params.row.isCurrent ? 'toggle-filled' : 'toggle'}></icon></i-button>
+                    <i-button size="small" title={params.row.isCurrent ? this.$t('p.detail.action[5]') : this.$t('p.detail.action[6]')} onClick={this.setApiInterfaceCurrent.bind(this, params.row)}><icon type={params.row.isCurrent ? 'toggle-filled' : 'toggle'}></icon></i-button>
                     <i-button size="small" title={this.$t('p.detail.action[0]')} onClick={this.preview.bind(this, params.row)}><icon type="eye"></icon></i-button>
                     <i-button size="small" title={this.$t('p.detail.action[1]')} onClick={this.openEditor.bind(this, params.row)}><icon type="edit"></icon></i-button>
                     <i-button size="small" title={this.$t('p.detail.action[2]')} class="copy-url" onClick={this.clip.bind(this, params.row.url)}><icon type="link"></icon></i-button>
@@ -342,8 +342,9 @@
           }
         })
       },
-      setApiInterfaceCurrent (mockId) {
-        this.$store.dispatch('mock/SET_MOCK_CURRENT', mockId).then(res => {
+      setApiInterfaceCurrent (mock) {
+        if (mock.isCurrent) return
+        this.$store.dispatch('mock/SET_MOCK_CURRENT', mock._id).then(res => {
           if (res.data.success) {
             this.$Message.success(this.$t('p.detail.setCurrentSuccess'))
           }
