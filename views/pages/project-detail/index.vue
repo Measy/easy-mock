@@ -112,7 +112,6 @@
   </style>
   
   <script>
-  import config from 'config'
   import Clipboard from 'clipboard'
   import debounce from 'lodash/debounce'
   
@@ -154,8 +153,6 @@
           {
             category: this.$t('p.detail.keyboards[1].category'),
             list: [
-              { description: this.$t('p.detail.keyboards[1].list[0]'), shorts: ['ctrl', 'a'] },
-              { description: this.$t('p.detail.keyboards[1].list[1]'), shorts: ['ctrl', 'd'] },
               { description: this.$t('p.detail.keyboards[1].list[2]'), shorts: ['ctrl', 'n'] },
               { description: this.$t('p.detail.keyboards[1].list[3]'), shorts: ['ctrl', 'w'] },
               { description: this.$t('p.detail.keyboards[1].list[4]'), shorts: ['ctrl', 's'] }
@@ -274,7 +271,7 @@
         }
       },
       baseUrl () {
-        const baseUrl = location.origin + config.mockPrefix + this.project._id + '/' + this.$store.state.user.id
+        const baseUrl = location.origin + '/mock/' + this.project._id + '/' + this.$store.state.user.id
         return this.project.url === '/' ? baseUrl : baseUrl + this.project.url
       },
       group () {
@@ -397,7 +394,7 @@
           content: ids.length > 1 ? this.$t('p.detail.remove.confirm[0]') : this.$t('p.detail.remove.confirm[1]'),
           onOk: () => {
             api.mock.delete({
-              data: { ids }
+              data: { project_id: this.project._id, ids }
             }).then((res) => {
               if (res.data.success) {
                 this.$Message.success(this.$t('p.detail.remove.success'))

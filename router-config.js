@@ -1,33 +1,48 @@
 'use strict'
 
 const config = require('config')
-const restc = require('restc').koa()
-const router = require('koa-router')
+const Router = require('koa-router')
+const restc = require('restc').koa2()
+const ratelimit = require('koa-ratelimit')
+const {
+  user,
+  mock,
+  util,
+  group,
+  project,
+  dashboard
+} = require('./controllers')
+const baseUtil = require('./util')
+const middleware = require('./middlewares')
 
-const user = require('./controllers/user')
-const mock = require('./controllers/mock')
-const util = require('./controllers/util')
-const group = require('./controllers/group')
-const project = require('./controllers/project')
-const realtime = require('./controllers/realtime')
+const rateLimitConf = config.get('rateLimit')
+const apiRouter = new Router({ prefix: '/api' })
+const mockRouter = new Router({ prefix: '/mock' })
+const rate = ratelimit({
+  db: baseUtil.getRedis(),
+  id: ctx => ctx.url,
+  max: rateLimitConf.max,
+  duration: rateLimitConf.duration,
+  errorMessage: 'Sometimes You Just Have to Slow Down.',
+  headers: {
+    remaining: 'Rate-Limit-Remaining',
+    reset: 'Rate-Limit-Reset',
+    total: 'Rate-Limit-Total'
+  }
+})
 
-const routerPrefix = config.get('routerPrefix')
+exports.mock = mockRouter
+  .all('*', middleware.mockFilter, rate, restc, mock.getMockAPI)
 
-exports.mock = router({ prefix: routerPrefix.mock })
-  .all('*', restc, mock.getMock)
-
-exports.api = router({ prefix: routerPrefix.api })
-  .get('/proxy', util.proxy)
+exports.api = apiRouter
   .get('/wallpaper', util.wallpaper)
   .post('/upload', util.upload)
 
-  .get('/realtime', realtime.list)
-  .get('/realtime/top/project', realtime.topProject)
+  .get('/dashboard', dashboard.list)
 
   .get('/u', user.list)
   .post('/u/login', user.login)
   .post('/u/update', user.update)
-  .post('/u/logout', user.logout)
   .post('/u/register', user.register)
   .put('/u/project/update', user.choseCase)
 
@@ -39,18 +54,18 @@ exports.api = router({ prefix: routerPrefix.api })
 
   .get('/project', project.list)
   .post('/project/copy', project.copy)
-  .post('/project/case', project.copyCase)
+  .post('/project/case', project.copyCase) // 后续把projectId也放到path里面
   .delete('/project/:projectId/case/:caseName', project.deleteCase)
   .post('/project/create', project.create)
   .post('/project/update', project.update)
   .post('/project/delete', project.delete)
-  .post('/project/update_swagger', project.updateSwagger)
+  .post('/project/sync/swagger', project.syncSwagger)
   .post('/project/update_workbench', project.updateWorkbench)
 
   .get('/mock', mock.list)
-  .get('/mock/by_projects', mock.byProjects)
+  .get('/mock/by_projects', mock.getAPIByProjectIds)
   .post('/mock/create', mock.create)
   .post('/mock/update', mock.update)
   .post('/mock/delete', mock.delete)
-  .post('/mock/export', mock.exportMock)
   .put('/mock/:id/current', mock.setCurrent)
+  .post('/mock/export', mock.exportAPI)
