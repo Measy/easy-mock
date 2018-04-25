@@ -33,8 +33,7 @@ module.exports = class UserProxy {
       $set: {
         nick_name: user.nick_name,
         head_img: user.head_img,
-        password: user.password,
-        projects: user.projects
+        password: user.password
       }
     })
   }

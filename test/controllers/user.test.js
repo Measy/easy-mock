@@ -144,6 +144,7 @@ describe('test/controllers/user.test.js', () => {
           description: 'mockforapicase'
         })
       expect(res.body.success)
+      const mockId = res.body.data.apis[0]._id
 
       res = await request('/api/project/case', 'post')
         .send({
@@ -168,7 +169,6 @@ describe('test/controllers/user.test.js', () => {
         project_id: project._id,
         url: '/mockforapicase'
       })
-      const mockId = res.body.data.mocks[0]._id
       res = await request('/api/mock/update', 'post')
         .send({
           id: mockId,

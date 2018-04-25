@@ -19,7 +19,7 @@ module.exports = class UserGroupProxy {
     if (projects.length === 0) return []
 
     const userProjectDocs = projects.map(project => {
-      return { user: doc.user, project: project.id }
+      return { user: doc.user, project: project.id, currentCase: 'default' }
     })
 
     return UserProjectProxy.newAndSave(userProjectDocs)

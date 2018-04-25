@@ -447,6 +447,7 @@ describe('test/controllers/project.test.js', () => {
           description: 'mockforapicase'
         })
       expect(res.body.success)
+      const mockId = res.body.data.apis[0]._id
 
       res = await request('/api/project/case', 'post')
         .send({
@@ -454,14 +455,6 @@ describe('test/controllers/project.test.js', () => {
           caseName: 'newCaseTest'
         })
       expect(res.body.success).toBe(true)
-
-      await request('/api/mock')
-        .query({
-          page_size: 2000,
-          page_index: 1,
-          api_case: 'newCaseTest',
-          project_id: projectId
-        })
 
       res = await request(`/mock/${projectId}/${user._id}/mockforapicase`)
       expect(res.body.currentNo).toBe(0)
@@ -473,12 +466,6 @@ describe('test/controllers/project.test.js', () => {
         })
       expect(res.body.success).toBe(true)
 
-      res = await request('/api/mock').query({
-        project_id: projectId,
-        url: '/mockforapicase',
-        caseName: 'default'
-      })
-      const mockId = res.body.data.mocks[0]._id
       res = await request('/api/mock/update', 'post')
         .send({
           id: mockId,

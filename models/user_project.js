@@ -20,6 +20,10 @@ const schema = new Schema({
   create_at: {
     type: Date,
     default: Date.now
+  },
+  currentCase: {
+    type: String,
+    default: 'default'
   }
 }, {
   collection: 'user_project'

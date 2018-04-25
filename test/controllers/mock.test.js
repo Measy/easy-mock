@@ -223,7 +223,7 @@ describe('test/controllers/mock.test.js', () => {
       expect(data.project.name).toBe('演示项目')
       expect(data.project.url).toBe('/example')
       expect(data.mocks).toHaveLength(1)
-      expect(data.mocks[0].case).toBe('default')
+      expect(data.mocks[0].case).toBe('newCase') // 前面新建了一个场景newCase，并没有选择过新的场景
     })
 
     test('获取接口列表', async () => {
@@ -425,7 +425,8 @@ describe('test/controllers/mock.test.js', () => {
           url: '/mockforsetcurrent',
           mode: '{ "currentNo": 0 }',
           method: 'get',
-          description: 'currentNo: 0'
+          description: 'currentNo: 0',
+          api_case: 'newCase'
         })
       api0 = api0Res.body.data.apis[0]
       const api1Res = await request('/api/mock/create', 'post')
@@ -434,7 +435,8 @@ describe('test/controllers/mock.test.js', () => {
           url: '/mockforsetcurrent',
           mode: '{ "currentNo": 1 }',
           method: 'get',
-          description: 'currentNo: 1'
+          description: 'currentNo: 1',
+          api_case: 'newCase'
         })
       api1 = api1Res.body.data.apis[0]
 

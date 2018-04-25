@@ -25,6 +25,16 @@ module.exports = class UserProjectProxy {
     })
   }
 
+  static async updateCurrentCase (userProject) {
+    await UserProject.update({
+      _id: userProject.id
+    }, {
+      $set: {
+        currentCase: userProject.currentCase
+      }
+    })
+  }
+
   static delByProjectId (projectId) {
     return UserProject.remove({
       project: projectId

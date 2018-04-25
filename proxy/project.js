@@ -25,11 +25,11 @@ module.exports = class ProjectProxy {
       const projectId = project.id
       const userId = project.user
       if (userId) {
-        return project.members.concat(userId).map(id => ({ user: id, project: projectId }))
+        return project.members.concat(userId).map(id => ({ user: id, project: projectId, currentCase: 'default' }))
       } else {
         return UserGroupProxy
           .find({ group: project.group })
-          .then(docs => docs.map(doc => ({ user: doc.user.id, project: projectId })))
+          .then(docs => docs.map(doc => ({ user: doc.user.id, project: projectId, currentCase: 'default' })))
       }
     })
     const result = await Promise.all(userProjectDocs)

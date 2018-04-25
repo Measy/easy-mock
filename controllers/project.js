@@ -398,11 +398,6 @@ module.exports = class ProjectController {
         project: project.id,
         user: { $in: delMembers }
       })
-      await Promise.all(delMembers.map(async member => {
-        const user = await UserProxy.getById(member)
-        user.projects = user.projects.filter(proj => proj.project.toString('hex') !== id)
-        await UserProxy.update(user)
-      }))
     }
 
     if (addMembers.length > 0) {
@@ -515,12 +510,12 @@ module.exports = class ProjectController {
     }))
 
     // 往user表里面更新关联的project的currentCase信息
-    const user = await UserProxy.getById(uid)
-    user.projects = user.projects.map(proj => {
-      if (proj.project.id.toString('hex') === project.id) proj.currentCase = caseName
-      return proj
+    const userProject = await UserProjectProxy.findOne({
+      user: uid,
+      project: project.id
     })
-    await UserProxy.update(user)
+    userProject.currentCase = caseName
+    await UserProjectProxy.updateCurrentCase(userProject)
 
     const body = await getCaseMockList(project.id, caseName, uid)
     ctx.body = ctx.util.resuccess(body)
@@ -556,7 +551,6 @@ module.exports = class ProjectController {
       id: project.id
     }
     await ProjectProxy.updateById(projectUpdated)
-
     await MockProxy.delByIds(mockIds)
 
     ctx.body = ctx.util.resuccess()

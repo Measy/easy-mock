@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken')
 const util = require('../util')
 const mockUtil = require('../util/mock')
 const ft = require('../models/fields_table')
-const { UserProxy, ProjectProxy, MockProxy, UserGroupProxy } = require('../proxy')
+const { UserProxy, ProjectProxy, MockProxy, UserGroupProxy, UserProjectProxy } = require('../proxy')
 
 const jwtSecret = config.get('jwt.secret')
 const jwtExpire = config.get('jwt.expire')
@@ -165,13 +165,13 @@ module.exports = class UserController {
       return
     }
 
-    // 往user表里面更新关联的project的currentCase信息
-    const user = await UserProxy.getById(uid)
-    user.projects = user.projects.map(proj => {
-      if (proj.project.id.toString('hex') === projectId) proj.currentCase = caseName
-      return proj
+    // 往userProject表里面更新关联currentCase信息
+    const userProject = await UserProjectProxy.findOne({
+      user: uid,
+      project: projectId
     })
-    await UserProxy.update(user)
+    userProject.currentCase = caseName
+    await UserProjectProxy.updateCurrentCase(userProject)
     ctx.body = ctx.util.resuccess()
   }
 

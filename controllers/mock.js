@@ -11,7 +11,7 @@ const pathToRegexp = require('path-to-regexp')
 
 const util = require('../util')
 const ft = require('../models/fields_table')
-const { MockProxy, ProjectProxy, UserGroupProxy, UserProxy } = require('../proxy')
+const { MockProxy, ProjectProxy, UserGroupProxy, UserProjectProxy } = require('../proxy')
 
 const redis = util.getRedis()
 const defPageSize = config.get('pageSize')
@@ -147,25 +147,17 @@ module.exports = class MockController {
     }
 
     // 选取用户当前处于的场景
-    const user = await UserProxy.getById(uid)
+    const userProject = await UserProjectProxy.findOne({
+      user: uid,
+      project: projectId
+    })
     let apiCase = 'default'
 
-    const userProject = user.projects.filter(proj => {
-      if (proj.project.id.toString('hex') === projectId) return proj
-    })[0]
-    if (userProject) {
-      if (project.cases.includes(userProject.currentCase)) {
-        apiCase = userProject.currentCase
-      } else {
-        userProject.currentCase = 'default' // 此处为矫正场景被删除后用户默认选中重置的情况
-        await UserProxy.update(user)
-      }
-    } else { // 懒同步，向用户同步project和对应的case情况
-      user.projects.push({
-        project: projectId, // 这里偷懒了，没有验证project是否真的存在，本来应该反正pro查询语句后面的
-        currentCase: 'default'
-      })
-      await UserProxy.update(user)
+    if (project.cases.includes(userProject.currentCase)) {
+      apiCase = userProject.currentCase
+    } else {
+      userProject.currentCase = 'default' // 此处为矫正场景被删除后用户默认选中重置的情况
+      await UserProjectProxy.updateCurrentCase(userProject)
     }
 
     const opt = {
@@ -281,15 +273,16 @@ module.exports = class MockController {
       return
     }
 
-    const user = await UserProxy.getById(uid)
-    let caseName = user.projects.filter(proj => proj.project.id.toString('hex') === project.id)[0].currentCase
+    // 选取用户当前处于的场景
+    const userProject = await UserProjectProxy.findOne({
+      user: uid,
+      project: projectId
+    })
+    let caseName = userProject.currentCase
     if (!project.cases.includes(caseName)) { // 此处为矫正场景被删除后用户默认选中重置的情况
-      user.projects = user.projects.map(proj => {
-        if (proj.project.id.toString('hex') === project.id) proj.currentCase = 'default'
-        return proj
-      })
+      userProject.currentCase = 'default'
       caseName = 'default'
-      await UserProxy.update(user)
+      await UserProjectProxy.updateCurrentCase(userProject)
     }
 
     apis = await redis.get(redisKey)
