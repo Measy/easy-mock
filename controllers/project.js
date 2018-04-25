@@ -6,7 +6,7 @@ const config = require('config')
 const util = require('../util')
 const ft = require('../models/fields_table')
 const SwaggerUtil = require('../util/swagger')
-const { MockProxy, ProjectProxy, UserProxy, UserProjectProxy, UserGroupProxy } = require('../proxy')
+const { MockProxy, ProjectProxy, UserProjectProxy, UserGroupProxy } = require('../proxy')
 
 const redis = util.getRedis()
 const defPageSize = config.get('pageSize')
