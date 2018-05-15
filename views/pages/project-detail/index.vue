@@ -210,15 +210,16 @@
               return (
                 <div>
                   <Button-group>
-                    <i-button size="small" title={params.row.isCurrent ? this.$t('p.detail.action[5]') : this.$t('p.detail.action[6]')} onClick={this.setApiInterfaceCurrent.bind(this, params.row)}><icon type={params.row.isCurrent ? 'toggle-filled' : 'toggle'}></icon></i-button>
+                    {params.row.isCurrent !== undefined ? <i-button size="small" title={params.row.isCurrent ? this.$t('p.detail.action[5]') : this.$t('p.detail.action[6]')} onClick={this.setApiInterfaceCurrent.bind(this, params.row)}><icon type={params.row.isCurrent ? 'toggle-filled' : 'toggle'}></icon></i-button> : ''}
                     <i-button size="small" title={this.$t('p.detail.action[0]')} onClick={this.preview.bind(this, params.row)}><icon type="eye"></icon></i-button>
                     <i-button size="small" title={this.$t('p.detail.action[1]')} onClick={this.openEditor.bind(this, params.row)}><icon type="edit"></icon></i-button>
                     <i-button size="small" title={this.$t('p.detail.action[2]')} class="copy-url" onClick={this.clip.bind(this, params.row.url)}><icon type="link"></icon></i-button>
+                    {params.row.isCurrent === undefined ? <i-button size="small" title={this.$t('p.detail.action[3]')} onClick={this.clone.bind(this, params.row)}><icon type="ios-copy"></icon></i-button> : ''}
                   </Button-group>
                   <dropdown>
                     <i-button size="small"><icon type="more"></icon></i-button>
                     <dropdown-menu slot="list">
-                      <dropdown-item nativeOnClick={this.clone.bind(this, params.row)}><icon type="ios-copy"></icon> {this.$t('p.detail.action[3]')}</dropdown-item>
+                      {params.row.isCurrent === undefined ? '' : <dropdown-item nativeOnClick={this.clone.bind(this, params.row)}><icon type="ios-copy"></icon> {this.$t('p.detail.action[3]')}</dropdown-item>}
                       <dropdown-item nativeOnClick={this.download.bind(this, params.row._id)}><icon type="ios-download"></icon> {this.$tc('p.detail.download', 2)}</dropdown-item>
                       <dropdown-item nativeOnClick={this.remove.bind(this, params.row._id)}><icon type="trash-b"></icon> {this.$t('p.detail.action[4]')}</dropdown-item>
                     </dropdown-menu>
@@ -244,13 +245,25 @@
         return this.$store.state.mock.project
       },
       list () {
-        const list = this.$store.state.mock.list
+        let list = this.$store.state.mock.list
         const reg = this.keywords && new RegExp(this.keywords, 'i')
-        return reg
+        list = reg
           ? list.filter(item => (
             reg.test(item.name) || reg.test(item.url) || reg.test(item.method)
           ))
           : list
+        const keyObj = {}
+        list.map(item => {
+          if (keyObj[`${item.url}${item.method}]`]) {
+            keyObj[`${item.url}${item.method}]`].push(item)
+          } else {
+            keyObj[`${item.url}${item.method}]`] = [ item ]
+          }
+        })
+        for (let key in keyObj) {
+          if (keyObj[key].length === 1) delete keyObj[key][0].isCurrent
+        }
+        return list
       },
       page () {
         return {

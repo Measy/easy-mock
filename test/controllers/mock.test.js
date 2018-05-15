@@ -179,7 +179,7 @@ describe('test/controllers/mock.test.js', () => {
       expect(res.body.message).toBe('无权限操作')
     })
 
-    test('接口已经存在', async () => {
+    test('接口已经存在, 请使用接口克隆', async () => {
       let res = await request('/api/mock').query({ project_id: project._id })
       res = await request('/api/mock/update', 'post')
         .send({
@@ -190,7 +190,7 @@ describe('test/controllers/mock.test.js', () => {
           description: 'mock'
         })
 
-      expect(res.body.message).toBe('接口已经存在')
+      expect(res.body.message).toBe('接口已经存在, 请使用接口克隆')
     })
 
     test('更新接口', async () => {

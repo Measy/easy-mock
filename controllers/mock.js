@@ -246,7 +246,7 @@ module.exports = class MockController {
     })
 
     if (!keepOrginal && existMock) { // 不是更改同一个接口，并且新的接口已经存在
-      ctx.body = ctx.util.refail('接口已经存在')
+      ctx.body = ctx.util.refail('接口已经存在, 请使用接口克隆')
       return
     }
 
