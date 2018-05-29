@@ -38,6 +38,26 @@
           @click="remove">{{$t('p.project.modal.delete.button')}}</Button>
       </div>
     </Modal>
+    <Modal v-model="copyModal.show" width="360">
+      <p slot="header" style="color:#f60;text-align:center">
+        <Icon type="fork-repo"></Icon>
+        <span> {{$t('p.project.modal.copy.title')}}</span>
+      </p>
+      <div>
+        <p style="margin-bottom: 10px;">{{$tc('p.project.modal.copy.description', 1)}} <strong style="word-break:break-all;">
+          {{copyModal.project.name}}</strong>
+          {{$tc('p.project.modal.copy.description', 2)}}
+        </p>
+        <i-select v-model="copyModal.groupId">
+          <Option v-for="item in groups" :value="item.value" :key="item.value">{{ item.label }}</Option>
+        </i-select>
+      </div>
+      <div slot="footer">
+        <Button size="large" long
+          :disabled="!copyModal.groupId"
+          @click="cloneToGroup">{{$t('p.project.modal.copy.button')}}</Button>
+      </div>
+    </Modal>
     <transition name="fade">
       <div class="em-container em-project__list" v-show="pageAnimated">
         <div class="ivu-row">
@@ -73,8 +93,9 @@
                 </div>
                 <Button-group class="project-control">
                   <Button type="ghost" icon="link" :title="$t('p.project.control[0]')" class="copy-url" @click="clip(item)"></Button>
-                  <Button type="ghost" icon="ios-copy" :title="$t('p.project.control[1]')" style="width: 34%;" @click.stop="clone(item)"></Button>
+                  <Button type="ghost" icon="ios-copy" :title="$t('p.project.control[1]')" @click.stop="clone(item)"></Button>
                   <Button type="ghost" icon="trash-b" :title="$t('p.project.control[2]')" @click.stop="removeConfirm(item)"></Button>
+                  <Button type="ghost" icon="share" :title="$t('p.project.control[3]')" @click.stop="cloneSelect(item)"></Button>
                 </Button-group>
               </div>
             </div>
@@ -105,6 +126,12 @@ export default {
         show: false,
         project: {},
         inputModel: ''
+      },
+      groups: [],
+      copyModal: {
+        show: false,
+        groupId: '',
+        project: {}
       }
     }
   },
@@ -117,6 +144,7 @@ export default {
     this.$on('query', debounce((keywords) => {
       this.$store.dispatch('project/QUERY', keywords)
     }, 500))
+    this.fetchGroup()
   },
   computed: {
     page () {
@@ -225,6 +253,34 @@ export default {
           this.$store.dispatch('project/FETCH')
         }
       })
+    },
+    fetchGroup () {
+      return api.group.getList().then((res) => {
+        if (res.data.success) {
+          this.groups = res.data.data.map(o => ({
+            value: o._id,
+            label: o.name
+          }))
+        }
+        return this.groups
+      })
+    },
+    cloneToGroup () {
+      return api.project.copy({
+        data: { id: this.copyModal.project._id, group: this.copyModal.groupId }
+      }).then((res) => {
+        this.copyModal.show = false
+        if (res.data.success) {
+          const label = this.groups.filter(item => item.value === this.copyModal.groupId)[0].label
+          this.$Message.success(this.$t('p.project.cloneSuccess'))
+          this.$router.push(`/group/${this.copyModal.groupId}?name=${label}`)
+        }
+      })
+    },
+    cloneSelect (project) {
+      this.copyModal.show = true
+      this.copyModal.groupId = ''
+      this.copyModal.project = project
     },
     loading () {
       this.$store.dispatch('project/FETCH').then((data) => {

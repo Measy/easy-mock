@@ -151,9 +151,14 @@ export default {
           description: '出于某些原因，删除也许会失败。但如果你执意删除，必须知道此操作无法撤消，这将永久删除 | 请输入项目名称以进行确认。',
           button: '删除',
           placeholder: '项目名确认'
+        },
+        copy: {
+          title: '选择团队',
+          description: '克隆项目 | 到团队',
+          button: '克隆'
         }
       },
-      control: ['复制项目地址', '克隆项目', '删除项目']
+      control: ['复制项目地址', '克隆项目', '删除项目', '克隆到团队']
     },
     detail: {
       header: {

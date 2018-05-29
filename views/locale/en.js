@@ -151,9 +151,14 @@ export default {
           description: 'Please type in the name of the project to confirm. | This action <strong>CANNOT<strong> be undone. This will permanently delete project:',
           button: 'Delete',
           placeholder: 'Project name'
+        },
+        copy: {
+          title: 'Chose Group',
+          description: 'Clone The Project | To Group',
+          button: 'Clone'
         }
       },
-      control: ['Copy Project Address', 'Copy Project', 'Delete Project']
+      control: ['Copy Project Address', 'Copy Project', 'Delete Project', 'Copy To Group']
     },
     detail: {
       header: {

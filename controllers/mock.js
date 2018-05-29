@@ -64,6 +64,18 @@ async function checkByCaseName (projectId, uid, caseName) {
   return '项目不存在'
 }
 
+function calculatePathWeight (requestPath, savePath) {
+  const requestPathNodes = requestPath.split('.')
+  const savePathhNodes = requestPath.split('.')
+  if (requestPathNodes.length !== savePathhNodes.length) return 0
+  const length = savePathhNodes.length
+  let weight = 0
+  for (let i = 0; i < length; i++) {
+    if (savePathhNodes[i] === requestPathNodes[i]) weight += 10 * (length - i)
+  }
+  return weight
+}
+
 module.exports = class MockController {
   /**
    * 创建接口
@@ -298,10 +310,20 @@ module.exports = class MockController {
       mockURL = mockURL.replace(apis[0].project.url, '') || '/'
     }
 
-    api = apis.filter((item) => {
+    let matchApis = apis.filter((item) => {
       const url = item.url.replace(/{/g, ':').replace(/}/g, '') // /api/{user}/{id} => /api/:user/:id
       return pathToRegexp(url).test(mockURL) && item.isCurrent && item.case === caseName && item.method === method // 选择当前激活的
-    })[0]
+    })
+
+    if (matchApis.length > 1) {
+      matchApis = matchApis.map(item => {
+        item.pathWeight = calculatePathWeight(mockURL, item.url)
+        return item
+      })
+      api = _.maxBy(matchApis, 'pathWeight')
+    } else {
+      api = matchApis[0]
+    }
 
     if (!api) ctx.throw(404)
 

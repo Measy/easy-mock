@@ -88,7 +88,8 @@ async function updateAndMeargeMock (projectId, swaggerDocs, caseName) {
 
 async function createMock (project, swaggerDocs) {
   await Promise.all(project.cases.map(async caseName => {
-    await updateAndMeargeMock(project.id, swaggerDocs, caseName)
+    const swaggerDocsClone = _.cloneDeepWith(swaggerDocs)
+    await updateAndMeargeMock(project.id, swaggerDocsClone, caseName)
   }))
 }
 

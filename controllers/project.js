@@ -155,7 +155,9 @@ module.exports = class ProjectController {
 
   static async copy (ctx) {
     const uid = ctx.state.user.id
+    const group = ctx.request.body.group
     const id = ctx.checkBody('id').notEmpty().value
+    const findQuery = {}
 
     if (ctx.errors) {
       ctx.body = ctx.util.refail(null, 10001, ctx.errors)
@@ -163,37 +165,48 @@ module.exports = class ProjectController {
     }
 
     const project = await checkByProjectId(id, uid)
-
     if (typeof project === 'string') {
       ctx.body = ctx.util.refail(project)
       return
     }
 
     const apis = await MockProxy.find({ project: id })
-
     if (apis.length === 0) {
       ctx.body = ctx.util.refail('该项目无接口可复制')
       return
     }
 
-    const newUrl = project.url + '_copy'
     const newName = project.name + '_copy'
-    const query = { user: uid, name: newName }
-    const checkProject = await ProjectProxy.findOne(query)
+    findQuery.name = newName
+    const saveQuery = {
+      name: newName,
+      url: project.url + '_copy',
+      description: project.description,
+      swagger_url: project.swagger_url,
+      cases: project.cases
+    }
+
+    if (group) {
+      findQuery.group = group
+      saveQuery.group = group
+      const userGroup = await UserGroupProxy.findOne({ user: uid, group: group })
+      if (!userGroup) {
+        ctx.body = ctx.util.refail('无团队权限')
+        return
+      }
+    } else {
+      findQuery.user = uid
+      saveQuery.user = uid
+    }
+
+    const checkProject = await ProjectProxy.findOne(findQuery)
 
     if (checkProject) {
       ctx.body = ctx.util.refail(`项目 ${newName} 已存在`)
       return
     }
 
-    const projects = await ProjectProxy.newAndSave({
-      user: uid,
-      name: newName,
-      url: newUrl,
-      description: project.description,
-      swagger_url: project.swagger_url,
-      cases: project.cases
-    })
+    const projects = await ProjectProxy.newAndSave(saveQuery)
 
     const newAPIs = apis.map(item => ({
       project: projects[0].id,
